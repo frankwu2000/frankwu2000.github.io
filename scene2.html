@@ -1,19 +1,216 @@
 <!DOCTYPE html>
 <html>
-  <body>
-    <h1>A study of Thread app review</h1>
-    <p>scene 2</p>
+  <div class="text">
+    <head>
+      <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+      <h1>A study of Thread app review</h1>
+      <p id="rcorners">
+        The detailed rating count comparison by source (IOS, Google Play)
+      </p>
 
-    <input
-      type="button"
-      onclick="location.href='scene3.html';"
-      value="Next scene"
-    />
-    <p></p>
-    <input
-      type="button"
-      onclick="location.href='scene1.html';"
-      value="Previous Scene"
-    />
-  </body>
+      <p>rating count by source pie graph</p>
+      <svg id="graph1"></svg>
+
+      <p>rating count by source bar graph</p>
+      <svg id="graph2"></svg>
+
+      <br />
+      <input
+        type="button"
+        onclick="location.href='scene3.html';"
+        value="Next scene"
+        class="button"
+      />
+      <p></p>
+
+      <!-- Load d3.js -->
+      <script src="http://d3js.org/d3.v5.min.js"></script>
+
+      <script>
+        const rate_counting_source_bar = [
+          { name: "Rate 1 - IOS", value: 1028 },
+          { name: "Rate 1 - Google Play", value: 8696 },
+          { name: "Rate 2 - IOS", value: 225 },
+          { name: "Rate 2 - Google Play", value: 1571 },
+          { name: "Rate 3 - IOS", value: 343 },
+          { name: "Rate 3 - Google Play", value: 2242 },
+          { name: "Rate 4 - IOS", value: 300 },
+          { name: "Rate 4 - Google Play", value: 2944 },
+          { name: "Rate 5 - IOS", value: 744 },
+          { name: "Rate 5 - Google Play", value: 14815 },
+        ];
+
+        const rate_counting_source_pie = [
+          { name: "IOS", value: 2640 },
+          { name: "Google Play", value: 30270 },
+        ];
+
+        const svg_1 = d3.select("#graph1");
+        const svg_2 = d3.select("#graph2");
+
+        create_pie(svg_1, rate_counting_source_pie, 0.3);
+        create_bar(svg_2, rate_counting_source_bar);
+
+        function create_bar(svg, data) {
+          const width = 928;
+          const height = 500;
+          const marginTop = 30;
+          const marginRight = 0;
+          const marginBottom = 30;
+          const marginLeft = 60;
+
+          // Declare the x (horizontal position) scale.
+          const x = d3
+            .scaleBand()
+            .domain(data.map((d) => d.name)) // descending count
+            .range([marginLeft, width - marginRight])
+            .padding(0.1);
+
+          // Declare the y (vertical position) scale.
+          const y = d3
+            .scaleLinear()
+            .domain([0, d3.max(data, (d) => d.value)])
+            .range([height - marginBottom, marginTop]);
+
+          // Create the SVG container.
+          svg
+            .attr("width", width)
+            .attr("height", height)
+            .attr("viewBox", [0, 0, width, height])
+            .attr("style", "max-width: 100%; height: auto;");
+
+          const color = d3
+            .scaleOrdinal()
+            .domain(rate_counting_source_bar.map((d) => d.name))
+            .range(
+              d3
+                .quantize(
+                  (t) => d3.interpolateSpectral(t * 0.8 + 0.1),
+                  rate_counting_source_bar.length
+                )
+                .reverse()
+            );
+
+          // Add a rect for each bar.
+          svg
+            .append("g")
+            .attr("fill", "steelblue")
+            .selectAll()
+            .data(data)
+            .join("rect")
+            .attr("x", (d) => x(d.name))
+            .attr("y", (d) => y(d.value))
+            .attr("height", (d) => y(0) - y(d.value))
+            .attr("width", x.bandwidth())
+            .attr("fill", (d) => color(d.name));
+
+          // Add the x-axis and label.
+          svg
+            .append("g")
+            .attr("transform", `translate(0,${height - marginBottom})`)
+            .call(d3.axisBottom(x).tickSizeOuter(0));
+
+          // Add the y-axis and label, and remove the domain line.
+          svg
+            .append("g")
+            .attr("transform", `translate(${marginLeft},0)`)
+            .call(d3.axisLeft(y).tickFormat((y) => (y * 100).toFixed()))
+            .call((g) => g.select(".domain").remove())
+            .call((g) =>
+              g
+                .append("text")
+                .attr("x", -marginLeft)
+                .attr("y", 10)
+                .attr("fill", "currentColor")
+                .attr("text-anchor", "start")
+                .text("Count")
+            );
+        }
+
+        function create_pie(svg, dict, color_random) {
+          const width = 800;
+          const height = Math.min(width, 400);
+          const pie = d3
+            .pie()
+            .sort(null)
+            .value((d) => d.value);
+
+          const arcs = pie(dict);
+
+          const color = d3
+            .scaleOrdinal()
+            .domain(rate_counting_source_pie.map((d) => d.name))
+            .range(
+              d3
+                .quantize(
+                  (t) => d3.interpolateSpectral(t * 0.8 + color_random),
+                  rate_counting_source_pie.length
+                )
+                .reverse()
+            );
+
+          const arc = d3
+            .arc()
+            .innerRadius(0)
+            .outerRadius(Math.min(width, height) / 2 - 1);
+
+          const labelRadius = arc.outerRadius()() * 0.8;
+
+          // A separate arc generator for labels.
+          const arcLabel = d3
+            .arc()
+            .innerRadius(labelRadius)
+            .outerRadius(labelRadius);
+
+          svg
+            .append("g")
+            .attr("stroke", "white")
+            .selectAll()
+            .data(arcs)
+            .join("path")
+            .attr("fill", (d) => color(d.data.name))
+            .attr("d", arc)
+            .append("title")
+            .text(
+              (d) => `${d.data.name}: ${d.data.value.toLocaleString("en-US")}`
+            );
+
+          svg
+            .attr("height", height)
+            .attr("width", width)
+            .attr("viewBox", [-width / 2, -height / 2, width, height])
+            .attr(
+              "style",
+              "max-width: 100%; height: auto; font: 10px sans-serif;"
+            );
+
+          svg
+            .append("g")
+            .attr("text-anchor", "middle")
+            .selectAll()
+            .data(arcs)
+            .join("text")
+            .attr("transform", (d) => `translate(${arcLabel.centroid(d)})`)
+            .call((text) =>
+              text
+                .append("tspan")
+                .attr("y", "-0.4em")
+                .attr("font-weight", "bold")
+                .text((d) => d.data.name)
+            )
+            .call((text) =>
+              text
+                .filter((d) => d.endAngle - d.startAngle > 0.25)
+                .append("tspan")
+                .attr("x", 0)
+                .attr("y", "0.7em")
+                .attr("fill-opacity", 0.7)
+                .text((d) => d.data.value.toLocaleString("en-US"))
+            );
+        }
+      </script>
+    </body>
+  </div>
 </html>

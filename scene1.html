@@ -1,19 +1,140 @@
 <!DOCTYPE html>
 <html>
-  <body>
-    <h1>A study of Thread app review</h1>
-    <p>scene 1</p>
+  <div class="text">
+    <head>
+      <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+      <h1>A study of Thread app review</h1>
+      <p id="rcorners">
+        The overall distribution of user rating on the Thread app!
+        <br />
+        Rating is selected from 1-5.
+      </p>
 
-    <input
-      type="button"
-      onclick="location.href='scene2.html';"
-      value="Next scene"
-    />
-    <p></p>
-    <input
-      type="button"
-      onclick="location.href='index.html';"
-      value="Previous Scene"
-    />
-  </body>
+      <p>IOS rating pie graph</p>
+      <svg id="graph1"></svg>
+
+      <p>Google Play rating pie graph</p>
+      <svg id="graph2"></svg>
+
+      <br />
+      <input
+        type="button"
+        onclick="location.href='scene2.html';"
+        value="Next scene"
+        class="button"
+      />
+      <p></p>
+
+      <!-- Load d3.js -->
+      <script src="http://d3js.org/d3.v5.min.js"></script>
+
+      <script>
+        const apple_rating_count_dict = [
+          { name: "Rate 1", value: 1028 },
+          { name: "Rate 2", value: 225 },
+          { name: "Rate 3", value: 343 },
+          { name: "Rate 4", value: 300 },
+          { name: "Rate 5", value: 744 },
+        ];
+
+        const google_play_rating_count_dict = [
+          { name: "Rate 1", value: 8696 },
+          { name: "Rate 2", value: 1571 },
+          { name: "Rate 3", value: 2242 },
+          { name: "Rate 4", value: 2944 },
+          { name: "Rate 5", value: 14815 },
+        ];
+        const width = 800;
+        const height = Math.min(width, 400);
+
+        const svg_1 = d3.select("#graph1");
+        const svg_2 = d3.select("#graph2");
+
+        create_pie(svg_1, apple_rating_count_dict, 0);
+        create_pie(svg_2, google_play_rating_count_dict, 0);
+
+        function create_pie(svg, dict, color_random) {
+          const pie = d3
+            .pie()
+            .sort(null)
+            .value((d) => d.value);
+
+          const arcs = pie(dict);
+
+          const color = d3
+            .scaleOrdinal()
+            .domain(apple_rating_count_dict.map((d) => d.name))
+            .range(
+              d3
+                .quantize(
+                  (t) => d3.interpolateSpectral(t * 0.8 + color_random),
+                  apple_rating_count_dict.length
+                )
+                .reverse()
+            );
+
+          const arc = d3
+            .arc()
+            .innerRadius(0)
+            .outerRadius(Math.min(width, height) / 2 - 1);
+
+          const labelRadius = arc.outerRadius()() * 0.8;
+
+          // A separate arc generator for labels.
+          const arcLabel = d3
+            .arc()
+            .innerRadius(labelRadius)
+            .outerRadius(labelRadius);
+
+          svg
+            .append("g")
+            .attr("stroke", "white")
+            .selectAll()
+            .data(arcs)
+            .join("path")
+            .attr("fill", (d) => color(d.data.name))
+            .attr("d", arc)
+            .append("title")
+            .text(
+              (d) => `${d.data.name}: ${d.data.value.toLocaleString("en-US")}`
+            );
+
+          svg
+            .attr("height", height)
+            .attr("width", width)
+            .attr("viewBox", [-width / 2, -height / 2, width, height])
+            .attr(
+              "style",
+              "max-width: 100%; height: auto; font: 10px sans-serif;"
+            );
+
+          svg
+            .append("g")
+            .attr("text-anchor", "middle")
+            .selectAll()
+            .data(arcs)
+            .join("text")
+            .attr("transform", (d) => `translate(${arcLabel.centroid(d)})`)
+            .call((text) =>
+              text
+                .append("tspan")
+                .attr("y", "-0.4em")
+                .attr("font-weight", "bold")
+                .text((d) => d.data.name)
+            )
+            .call((text) =>
+              text
+                .filter((d) => d.endAngle - d.startAngle > 0.25)
+                .append("tspan")
+                .attr("x", 0)
+                .attr("y", "0.7em")
+                .attr("fill-opacity", 0.7)
+                .text((d) => d.data.value.toLocaleString("en-US"))
+            );
+        }
+      </script>
+    </body>
+  </div>
 </html>
