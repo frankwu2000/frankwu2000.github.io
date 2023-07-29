@@ -28,7 +28,7 @@
       <p></p>
 
       <!-- Load d3.js -->
-      <script src="http://d3js.org/d3.v5.min.js"></script>
+      <script src="https://d3js.org/d3.v5.min.js"></script>
 
       <script>
         const apple_rating_count_dict = [
@@ -52,8 +52,8 @@
         const svg_1 = d3.select("#graph1");
         const svg_2 = d3.select("#graph2");
 
-        create_pie(svg_1, apple_rating_count_dict, 0);
-        create_pie(svg_2, google_play_rating_count_dict, 0);
+        create_pie(svg_1, apple_rating_count_dict, 0.1);
+        create_pie(svg_2, google_play_rating_count_dict, 0.1);
 
         function create_pie(svg, dict, color_random) {
           const pie = d3
