@@ -20,6 +20,7 @@
       <p>Note for IOS the user review counts starts declining on 2023-07-06</p>
       <div id="my_dataviz">
         <svg id="graph1"></svg>
+        <div id="my_dataviz2"></div>
       </div>
 
       <br />
@@ -83,25 +84,13 @@
 
           const svg_1 = d3.select("#graph1");
 
-          var margin = { top: 10, right: 30, bottom: 30, left: 100 },
-            width = 1800 - margin.left - margin.right,
-            height = 600;
+          var margin = { top: 100, right: 100, bottom: 100, left: 100 },
+            width = 2000 - margin.left - margin.right,
+            height = 800;
 
           svg_1
             .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr(
-              "transform",
-              "translate(" + margin.left + "," + margin.top + ")"
-            );
-
-          var sumstat = d3
-            .nest()
-            .key(function (d) {
-              return d.rating;
-            })
-            .entries(both_count_dates);
+            .attr("height", height + margin.top + margin.bottom);
 
           var x = d3
             .scaleTime()
@@ -113,9 +102,7 @@
             .range([0, width]);
 
           svg_1
-            .attr("id", "lineToolTip")
             .append("g")
-            .attr("transform", "translate(100," + height + ")")
             .call(
               d3
                 .axisBottom(x)
@@ -123,6 +110,10 @@
                 .tickFormat(function (d, i) {
                   return d3.timeFormat("%Y-%m-%d")(d);
                 })
+            )
+            .attr(
+              "transform",
+              "translate( " + margin.left + "," + (height + margin.top) + ")"
             );
 
           var y = d3
@@ -136,8 +127,11 @@
             .range([height, 0]);
           svg_1
             .append("g")
-            .call(d3.axisLeft(y).ticks(10))
-            .attr("transform", "translate(100,0)");
+            .call(d3.axisLeft(y).ticks(12))
+            .attr(
+              "transform",
+              "translate( " + margin.left + "," + margin.top + ")"
+            );
 
           svg_1
             .append("path")
@@ -156,28 +150,60 @@
                   return y(d.count);
                 })
             )
-            .attr("transform", "translate(100,0)");
+            .attr(
+              "transform",
+              "translate( " + margin.left + "," + margin.top + ")"
+            );
 
           // create a tooltip
-          var tooltip = d3
-            .select("#my_dataviz")
+          var Tooltip = d3
+            .select("#my_dataviz2")
             .append("div")
-            .style("position", "absolute")
-            .style("visibility", "visible")
-            .text("IOS user review!");
+            .style("opacity", 0)
+            .style("background-color", "white")
+            .style("border", "solid")
+            .style("border-width", "2px")
+            .style("border-radius", "5px")
+            .style("padding", "5px");
 
-          d3.select("#lineToolTip")
-            .on("mouseover", function () {
-              return tooltip.style("visibility", "visible");
+          // Three function that change the tooltip when user hover / move / leave a cell
+          var mouseover = function (d) {
+            Tooltip.style("opacity", 1);
+            d3.select(this).style("stroke", "black").style("opacity", 1);
+          };
+          var mousemove = function (d) {
+            Tooltip.html(
+              "Date: " + d.review_date + ", Total count of rating: " + d.count
+            );
+          };
+          var mouseleave = function (d) {
+            Tooltip.style("opacity", 0);
+            d3.select(this).style("stroke", "none").style("opacity", 0.8);
+          };
+
+          svg_1
+            .selectAll("circle")
+            .data(both_count_dates)
+            .enter()
+            .append("circle")
+            .attr("id", "circle_data")
+            .attr("r", 10)
+            .attr("cx", function (d) {
+              return x(new Date(d.review_date));
             })
-            .on("mousemove", function () {
-              return tooltip
-                .style("top", event.pageY - 100 + "px")
-                .style("left", event.pageX - 100 + "px");
+            .attr("cy", function (d) {
+              return y(d.count);
             })
-            .on("mouseout", function () {
-              return tooltip.style("visibility", "hidden");
-            });
+            .style("fill", "steelblue")
+            .style("stroke", "none")
+            .style("pointer-events", "all")
+            .attr(
+              "transform",
+              "translate( " + margin.left + "," + margin.top + ")"
+            )
+            .on("mouseover", mouseover)
+            .on("mousemove", mousemove)
+            .on("mouseleave", mouseleave);
         });
       </script>
     </body>
