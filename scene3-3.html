@@ -21,7 +21,9 @@
         Note for Google Play the user review counts starts declining on
         2023-07-06
       </p>
-      <svg id="graph1"></svg>
+      <div id="my_dataviz">
+        <svg id="graph1"></svg>
+      </div>
 
       <br />
       <br />
@@ -143,6 +145,7 @@
             .attr("transform", "translate(100,0)");
 
           svg_1
+            .attr("id", "lineToolTip")
             .append("path")
             .datum(both_count_dates)
             .attr("fill", "none")
@@ -160,6 +163,27 @@
                 })
             )
             .attr("transform", "translate(100,0)");
+
+          // create a tooltip
+          var tooltip = d3
+            .select("#my_dataviz")
+            .append("div")
+            .style("position", "absolute")
+            .style("visibility", "visible")
+            .text("Google play user review!");
+
+          d3.select("#lineToolTip")
+            .on("mouseover", function () {
+              return tooltip.style("visibility", "visible");
+            })
+            .on("mousemove", function () {
+              return tooltip
+                .style("top", event.pageY - 100 + "px")
+                .style("left", event.pageX - 100 + "px");
+            })
+            .on("mouseout", function () {
+              return tooltip.style("visibility", "hidden");
+            });
         });
       </script>
     </body>
