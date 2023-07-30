@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+  <div class="text">
+    <head>
+      <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+      <h1>A study of Thread app review</h1>
+      <p id="rcorners">sum of rating count by date for Google Play</p>
+
+      <div class="dropdown">
+        <button>Select source of rating:</button>
+        <div class="dropdown-options">
+          <a href="scene3-1.html">IOS and Google Play</a>
+          <a href="scene3-2.html">IOS</a>
+          <a href="scene3-3.html">Google Play</a>
+        </div>
+      </div>
+
+      <p>
+        Note for Google Play the user review counts starts declining on
+        2023-07-06
+      </p>
+      <svg id="graph1"></svg>
+
+      <br />
+      <br />
+      <br />
+      <input
+        type="button"
+        onclick="location.href='index.html';"
+        value="Back to the intro"
+        class="button"
+      />
+
+      <!-- Load d3.js -->
+      <script src="https://d3js.org/d3.v5.min.js"></script>
+
+      <script>
+        d3.csv("data/threads_reviews_clean.csv").then(function (data) {
+          var raw_data_both = data;
+          var raw_data_ios = data.filter((d) => d.source.includes("App Store"));
+          var raw_data_gplay = data.filter((d) =>
+            d.source.includes("Google Play")
+          );
+
+          const group_by_date_rating_source_count = (acc, obj) => {
+            const existingIndex = acc.findIndex(
+              (accd) =>
+                // accd.rating == obj.rating &&
+                // accd.source == obj.source &&
+                accd.review_date == obj.review_date
+            );
+            if (existingIndex > -1) {
+              acc[existingIndex].count += 1;
+            } else {
+              acc.push({
+                rating: obj.rating,
+                source: obj.source,
+                review_date: obj.review_date,
+                count: 1,
+              });
+            }
+            return acc;
+          };
+
+          var both_count_dates = raw_data_both.reduce(
+            group_by_date_rating_source_count,
+            []
+          );
+
+          var ios_count_dates = raw_data_ios.reduce(
+            group_by_date_rating_source_count,
+            []
+          );
+
+          var gplay_count_dates = raw_data_gplay.reduce(
+            group_by_date_rating_source_count,
+            []
+          );
+
+          both_count_dates = gplay_count_dates;
+
+          both_count_dates.sort(function (a, b) {
+            return new Date(a.review_date) - new Date(b.review_date);
+          });
+
+          const svg_1 = d3.select("#graph1");
+
+          var margin = { top: 10, right: 30, bottom: 30, left: 100 },
+            width = 1800 - margin.left - margin.right,
+            height = 600;
+
+          svg_1
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr(
+              "transform",
+              "translate(" + margin.left + "," + margin.top + ")"
+            );
+
+          var sumstat = d3
+            .nest()
+            .key(function (d) {
+              return d.rating;
+            })
+            .entries(both_count_dates);
+
+          var x = d3
+            .scaleTime()
+            .domain(
+              d3.extent(both_count_dates, function (d) {
+                return new Date(d.review_date);
+              })
+            )
+            .range([0, width]);
+
+          svg_1
+            .append("g")
+            .attr("transform", "translate(100," + height + ")")
+            .call(
+              d3
+                .axisBottom(x)
+                .ticks(d3.timeDay.every(1))
+                .tickFormat(function (d, i) {
+                  return d3.timeFormat("%Y-%m-%d")(d);
+                })
+            );
+
+          var y = d3
+            .scaleLinear()
+            .domain([
+              0,
+              d3.max(both_count_dates, function (d) {
+                return d.count;
+              }),
+            ])
+            .range([height, 0]);
+          svg_1
+            .append("g")
+            .call(d3.axisLeft(y).ticks(10))
+            .attr("transform", "translate(100,0)");
+
+          svg_1
+            .append("path")
+            .datum(both_count_dates)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 1.5)
+            .attr(
+              "d",
+              d3
+                .line()
+                .x(function (d) {
+                  return x(new Date(d.review_date));
+                })
+                .y(function (d) {
+                  return y(d.count);
+                })
+            )
+            .attr("transform", "translate(100,0)");
+        });
+      </script>
+    </body>
+  </div>
+</html>

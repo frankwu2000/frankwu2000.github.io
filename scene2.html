@@ -19,7 +19,7 @@
       <br />
       <input
         type="button"
-        onclick="location.href='scene3.html';"
+        onclick="location.href='scene3-1.html';"
         value="Next scene"
         class="button"
       />
@@ -50,7 +50,7 @@
         const svg_1 = d3.select("#graph1");
         const svg_2 = d3.select("#graph2");
 
-        create_pie(svg_1, rate_counting_source_pie, 0.3);
+        create_pie(svg_1, rate_counting_source_pie, 0.1);
         create_bar(svg_2, rate_counting_source_bar);
 
         function create_bar(svg, data) {
@@ -88,7 +88,7 @@
               d3
                 .quantize(
                   (t) => d3.interpolateSpectral(t * 0.8 + 0.1),
-                  rate_counting_source_bar.length
+                  rate_counting_source_pie.length
                 )
                 .reverse()
             );
