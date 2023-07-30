@@ -38,10 +38,6 @@
       <script>
         d3.csv("data/threads_reviews_clean.csv").then(function (data) {
           var raw_data_both = data;
-          var raw_data_ios = data.filter((d) => d.source.includes("App Store"));
-          var raw_data_gplay = data.filter((d) =>
-            d.source.includes("Google Play")
-          );
 
           const group_by_date_rating_source_count = (acc, obj) => {
             const existingIndex = acc.findIndex(
@@ -65,146 +61,140 @@
             []
           );
 
-          var ios_count_dates = raw_data_ios.reduce(
-            group_by_date_rating_source_count,
-            []
-          );
+          createLineChart(both_count_dates);
 
-          var gplay_count_dates = raw_data_gplay.reduce(
-            group_by_date_rating_source_count,
-            []
-          );
+          function createLineChart(data) {
+            data.sort(function (a, b) {
+              return new Date(a.review_date) - new Date(b.review_date);
+            });
 
-          both_count_dates.sort(function (a, b) {
-            return new Date(a.review_date) - new Date(b.review_date);
-          });
+            const svg_1 = d3.select("#graph").append("svg");
 
-          const svg_1 = d3.select("#graph").append("svg");
+            var margin = { top: 100, right: 300, bottom: 100, left: 100 },
+              width = 2000 - margin.left - margin.right,
+              height = 800;
 
-          var margin = { top: 100, right: 300, bottom: 100, left: 100 },
-            width = 2000 - margin.left - margin.right,
-            height = 800;
+            svg_1
+              .attr("width", width + margin.left + margin.right)
+              .attr("height", height + margin.top + margin.bottom);
 
-          svg_1
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom);
+            var x = d3
+              .scaleTime()
+              .domain(
+                d3.extent(data, function (d) {
+                  return new Date(d.review_date);
+                })
+              )
+              .range([0, width]);
 
-          var x = d3
-            .scaleTime()
-            .domain(
-              d3.extent(both_count_dates, function (d) {
-                return new Date(d.review_date);
+            svg_1
+              .append("g")
+              .call(
+                d3
+                  .axisBottom(x)
+                  .ticks(d3.timeDay.every(1))
+                  .tickFormat(function (d, i) {
+                    return d3.timeFormat("%Y-%m-%d")(d);
+                  })
+              )
+              .attr(
+                "transform",
+                "translate( " + margin.left + "," + (height + margin.top) + ")"
+              );
+
+            var y = d3
+              .scaleLinear()
+              .domain([
+                0,
+                d3.max(data, function (d) {
+                  return d.count;
+                }),
+              ])
+              .range([height, 0]);
+            svg_1
+              .append("g")
+              .call(d3.axisLeft(y).ticks(12))
+              .attr(
+                "transform",
+                "translate( " + margin.left + "," + margin.top + ")"
+              );
+
+            svg_1
+              .append("path")
+              .datum(data)
+              .attr("fill", "none")
+              .attr("stroke", "steelblue")
+              .attr("stroke-width", 1.5)
+              .attr(
+                "d",
+                d3
+                  .line()
+                  .x(function (d) {
+                    return x(new Date(d.review_date));
+                  })
+                  .y(function (d) {
+                    return y(d.count);
+                  })
+              )
+              .attr(
+                "transform",
+                "translate( " + margin.left + "," + margin.top + ")"
+              );
+
+            // create a tooltip
+            var Tooltip = d3
+              .select("#graph")
+              .append("div")
+              .attr("id", "tooltip")
+              .style("position", "absolute")
+              .style("opacity", 0)
+              .style("background-color", "white")
+              .style("border", "solid")
+              .style("border-width", "2px")
+              .style("border-radius", "5px")
+              .style("padding", "5px");
+
+            var mouseover = function (d) {
+              Tooltip.style("opacity", 1);
+              d3.select(this).style("stroke", "black").style("opacity", 1);
+            };
+            var mousemove = function (d) {
+              const top = d3.mouse(this)[1] + 300;
+              Tooltip.html(
+                "Date: " + d.review_date + ", Total count of rating: " + d.count
+              )
+                .style("left", d3.mouse(this)[0] + "px")
+                .style("top", top + "px");
+            };
+            var mouseleave = function (d) {
+              Tooltip.style("opacity", 0);
+              d3.select(this).style("stroke", "none").style("opacity", 0.8);
+            };
+
+            svg_1
+              .selectAll()
+              .data(data)
+              .enter()
+              .append("circle")
+              .attr("id", "circle_data")
+              .attr("r", 10)
+              .attr("cx", function (d) {
+                return x(new Date(d.review_date));
               })
-            )
-            .range([0, width]);
-
-          svg_1
-            .append("g")
-            .call(
-              d3
-                .axisBottom(x)
-                .ticks(d3.timeDay.every(1))
-                .tickFormat(function (d, i) {
-                  return d3.timeFormat("%Y-%m-%d")(d);
-                })
-            )
-            .attr(
-              "transform",
-              "translate( " + margin.left + "," + (height + margin.top) + ")"
-            );
-
-          var y = d3
-            .scaleLinear()
-            .domain([
-              0,
-              d3.max(both_count_dates, function (d) {
-                return d.count;
-              }),
-            ])
-            .range([height, 0]);
-          svg_1
-            .append("g")
-            .call(d3.axisLeft(y).ticks(12))
-            .attr(
-              "transform",
-              "translate( " + margin.left + "," + margin.top + ")"
-            );
-
-          svg_1
-            .append("path")
-            .datum(both_count_dates)
-            .attr("fill", "none")
-            .attr("stroke", "steelblue")
-            .attr("stroke-width", 1.5)
-            .attr(
-              "d",
-              d3
-                .line()
-                .x(function (d) {
-                  return x(new Date(d.review_date));
-                })
-                .y(function (d) {
-                  return y(d.count);
-                })
-            )
-            .attr(
-              "transform",
-              "translate( " + margin.left + "," + margin.top + ")"
-            );
-
-          // create a tooltip
-          var Tooltip = d3
-            .select("#graph")
-            .append("div")
-            .attr("id", "tooltip")
-            .style("position", "absolute")
-            .style("opacity", 0)
-            .style("background-color", "white")
-            .style("border", "solid")
-            .style("border-width", "2px")
-            .style("border-radius", "5px")
-            .style("padding", "5px");
-
-          var mouseover = function (d) {
-            Tooltip.style("opacity", 1);
-            d3.select(this).style("stroke", "black").style("opacity", 1);
-          };
-          var mousemove = function (d) {
-            const top = d3.mouse(this)[1] + 300;
-            Tooltip.html(
-              "Date: " + d.review_date + ", Total count of rating: " + d.count
-            )
-              .style("left", d3.mouse(this)[0] + "px")
-              .style("top", top + "px");
-          };
-          var mouseleave = function (d) {
-            Tooltip.style("opacity", 0);
-            d3.select(this).style("stroke", "none").style("opacity", 0.8);
-          };
-
-          svg_1
-            .selectAll()
-            .data(both_count_dates)
-            .enter()
-            .append("circle")
-            .attr("id", "circle_data")
-            .attr("r", 10)
-            .attr("cx", function (d) {
-              return x(new Date(d.review_date));
-            })
-            .attr("cy", function (d) {
-              return y(d.count);
-            })
-            .style("fill", "steelblue")
-            .style("stroke", "none")
-            .style("pointer-events", "all")
-            .attr(
-              "transform",
-              "translate( " + margin.left + "," + margin.top + ")"
-            )
-            .on("mouseover", mouseover)
-            .on("mousemove", mousemove)
-            .on("mouseleave", mouseleave);
+              .attr("cy", function (d) {
+                return y(d.count);
+              })
+              .style("fill", "steelblue")
+              .style("stroke", "none")
+              .style("pointer-events", "all")
+              .attr(
+                "transform",
+                "translate( " + margin.left + "," + margin.top + ")"
+              )
+              .on("mouseover", mouseover)
+              .on("mousemove", mousemove)
+              .on("mouseleave", mouseleave);
+          }
         });
       </script>
     </body>
